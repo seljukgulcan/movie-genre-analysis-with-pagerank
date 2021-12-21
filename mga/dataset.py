@@ -1,68 +1,68 @@
 import urllib.request
 import zipfile
-import os
 import shutil
 from pathlib import Path
 
 URL_ML_SMALL = 'http://files.grouplens.org/datasets/movielens/ml-latest-small.zip'
 URL_ML_25M = 'http://files.grouplens.org/datasets/movielens/ml-25m.zip'
-TEMP_FILE = 'temp.zip'
+TEMP_FILE = Path('temp.zip')
 
 DIR_ML_25M = 'ml-25m'
 DIR_ML_SMALL = 'ml-latest-small'
 
 
-def download_ml_small(target_filename='ratings.csv', *, force_download=False):
+def download_ml_small(base_dir='./', *, force_download=False):
     """
     Downloads movielens small dataset
-    :param target_filename: If target file is already there, it skips downloading the file unless force_download is True
+    :param base_dir: If rating.csv is already in base_dir, it skips downloading the file unless force_download is True
     :param force_download If True, downloads (and overwrites) the file regardless of whether the file has already been
     downloaded.
     :return:target filename
     """
 
     return _download_ml_dataset(URL_ML_SMALL, DIR_ML_SMALL,
-                                target_filename=target_filename, force_download=force_download)
+                                base_dir=base_dir, force_download=force_download)
 
 
-def download_ml_25m(target_filename='ratings.csv', *, force_download=False):
+def download_ml_25m(base_dir='./', *, force_download=False):
     """
     Downloads movielens-25m dataset
-    :param target_filename: If target file is already there, it skips downloading the file unless force_download is True
+    :param base_dir: If rating.csv is already in base_dir, it skips downloading the file unless force_download is True
     :param force_download If True, downloads (and overwrites) the file regardless of whether the file has already been
     downloaded.
     :return:target filename
     """
 
     return _download_ml_dataset(URL_ML_25M, DIR_ML_25M,
-                                target_filename=target_filename, force_download=force_download)
+                                base_dir=base_dir, force_download=force_download)
 
 
-def _download_ml_dataset(url, directory_name, target_filename, *, force_download=False):
+def _download_ml_dataset(url, download_dir, base_dir, *, force_download=False):
     """
     Downloads a movielens dataset
-    :param target_filename: If target file is already there, it skips downloading the file unless force_download is True
+    :param base_dir: If rating.csv is already in base_dir, it skips downloading the file unless force_download is True
     :param force_download If True, downloads (and overwrites) the file regardless of whether the file has already been
     downloaded.
-    :return:target filename
+    :return:base directory
     """
 
-    is_target_file_exist = os.path.isfile(target_filename)
+    base_dir = Path(base_dir)
+    download_dir = Path(download_dir)
+    rating_filepath = base_dir / 'movies.csv'
+    is_target_file_exist = rating_filepath.is_file()
 
     if is_target_file_exist and not force_download:
-        return target_filename
+        return str(base_dir)
 
     urllib.request.urlretrieve(url, TEMP_FILE)
     with zipfile.ZipFile(TEMP_FILE, 'r') as zip_file:
         zip_file.extractall('./')
 
-    os.rename(f'{directory_name}/ratings.csv', target_filename)
+    for filename in ['ratings.csv', 'movies.csv', 'links.csv']:
+        path = download_dir / filename
+        path.replace(base_dir / filename)
 
-    target_directory = Path(target_filename).parent
-    os.rename(f'{directory_name}/movies.csv', target_directory / 'movies.csv')
-    os.rename(f'{directory_name}/links.csv', target_directory / 'links.csv')
+    TEMP_FILE.unlink()
+    shutil.rmtree(download_dir)
 
-    os.remove(TEMP_FILE)
-    shutil.rmtree(directory_name)
-
-    return target_filename
+    return str(base_dir)
