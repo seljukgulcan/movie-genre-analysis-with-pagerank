@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def clean(base_dir='./'):
+def clean(base_dir='./', movie_view_threshold=15):
 
     base_dir = Path(base_dir)
 
@@ -12,7 +12,6 @@ def clean(base_dir='./'):
     movie_df['imdb_id'] = link_df['imdbId']
     movie_df['tmdb_id'] = link_df['tmdbId']
     movie_df = movie_df.rename(columns={'movieId': 'movielens_id'})
-    movie_df.to_csv(base_dir / 'movies.csv', index_label='id')
 
     # Genre cleaning
     genre_set = set()
@@ -39,16 +38,33 @@ def clean(base_dir='./'):
     # Ratings cleaning
     rating_df = pd.read_csv(base_dir / 'ratings.csv')
     del rating_df['timestamp']
+    rating_df = rating_df.rename(columns={'userId': 'user_id', 'movieId': 'movie_id'})
+
+    # Get movies with view count larger than the threshold
+    df_count = rating_df[['movie_id', 'rating']].groupby('movie_id').aggregate(['count'])
+    df_count.columns = df_count.columns.droplevel()
+    df_count = df_count.loc[df_count['count'] > movie_view_threshold]
+
+    # Filter rating df
+    rating_df = rating_df[rating_df['movie_id'].isin(df_count.index)]
+
+    # Filter movie df and reset index
+    old_movie_count = movie_df.shape[0]
+    movie_df = movie_df[movie_df['movielens_id'].isin(df_count.index)]
+    movie_df = movie_df.reset_index(drop=True)
+    new_movie_count = movie_df.shape[0]
+    dropped_movie_count = old_movie_count - new_movie_count
+    print(f'Dropped movie count: {dropped_movie_count}')
+    print(f'New movie count: {new_movie_count}')
 
     movilens2id = pd.DataFrame(data=movie_df.index, index=movie_df['movielens_id'])
-    rating_df['movieId'] = movilens2id.loc[rating_df['movieId']].values
+    rating_df['movie_id'] = movilens2id.loc[rating_df['movie_id']].values
 
-    id2movielens = pd.Series(rating_df['userId'].drop_duplicates().sort_values().values)
+    id2movielens = pd.Series(rating_df['user_id'].drop_duplicates().sort_values().values)
     movielens2id = pd.Series(data=id2movielens.index, index=id2movielens)
-    rating_df['userId'] = movielens2id.loc[rating_df['userId']].values
+    rating_df['user_id'] = movielens2id.loc[rating_df['user_id']].values
 
-    rating_df = rating_df.rename(columns={'userId': 'user_id'})
-    rating_df = rating_df.rename(columns={'movieId': 'movie_id'})
+    movie_df.to_csv('movies.csv', index_label='id')
 
     # Writing mtx file
     row_count = rating_df['user_id'].max() + 1
