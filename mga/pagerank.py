@@ -21,6 +21,8 @@ def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, po
                               'weight': edge_df['weight']})
     edge_df = edge_df.append(df_append)
 
+    print('Edges read')
+
     # Create the influence graph
     G = nx.from_pandas_edgelist(edge_df,
                                 source='source',
@@ -28,6 +30,7 @@ def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, po
                                 edge_attr='weight',
                                 create_using=nx.DiGraph)
     edge_df = None
+    print('Graph generated')
 
     # Print some statistics for sanity check
     print(f'Edge count: {G.number_of_edges()}')
