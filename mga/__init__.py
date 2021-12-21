@@ -1,3 +1,5 @@
+from mga.pagerank import pagerank
+
 from pathlib import Path
 import pandas as pd
 

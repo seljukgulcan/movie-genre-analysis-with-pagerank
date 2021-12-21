@@ -86,7 +86,7 @@ int main(int argc, char** argv)
         movie2userset[movie].insert(user);
     }
 
-    double threshold = 0.25;
+    double threshold = 0.4;
 
     cout << "sets are created" << endl;
 
@@ -94,14 +94,17 @@ int main(int argc, char** argv)
 
     cout << "running on " << thread_count << " threads" << endl;
 
-    cout << "threshold: " << threshold << endl;
-
     vector<vector<Coord>> thread2edge_list(thread_count);
+    vector<uint> thread2edge_count(thread_count, 0);
+    vector<vector<float>> thread2weight_list(thread_count);
 
-    #pragma omp parallel for schedule(dynamic, 30)
+    #pragma omp parallel for schedule(dynamic, 100)
     for(uint i = 0; i < movie_count; i++)
     {
         int tid = omp_get_thread_num();
+
+        if(i % 1000 == 0)
+            cout << i << endl;
 
         SET<uint>& set_i = movie2userset[i];
         for(uint j = i + 1; j < movie_count; j++)
@@ -123,39 +126,44 @@ int main(int argc, char** argv)
 
             float weight = (float(intersection)) / min(set_i.size(), set_j.size());
 
-            if(weight > threshold)
+            if(i % 500 == 250)
             {
-                Coord edge;
-                edge.row = i;
-                edge.col = j;
-                edge.weight = weight;
-
-                thread2edge_list[tid].push_back(edge);
+                thread2weight_list[tid].push_back(weight);
             }
+
+            thread2edge_count[tid] += 2;
         }
     }
 
-    // Merge edge vectors
-    vector<Coord> edge_list;
+    // Merge edge counts
+    uint edge_count = 0;
     for(uint i = 0; i < thread_count; i++)
     {
-        for(Coord edge : thread2edge_list[i])
+        edge_count += thread2edge_count[i];
+    }
+
+    // Merge weight vectors
+    vector<float> weight_list;
+    for(uint i = 0; i < thread_count; i++)
+    {
+        for(float weight : thread2weight_list[i])
         {
-            edge_list.push_back(edge);
+            weight_list.push_back(weight);
         }
     }
-    uint edge_count = 2 * edge_list.size();
+    cout << "Sampled weight count: " << weight_list.size() << endl;
 
-    cout << "Edge count: " << edge_count << endl;
-    double density = ((double)edge_count) / (movie_count * (movie_count - 1));
-    cout << "Density: " << density << endl;
+    ofstream file("../weight_list.txt");
 
-    ofstream file("edges.csv");
-    file << "source,destination,weight" << endl;
-    for(Coord edge : edge_list)
+    for(float weight : weight_list)
     {
-        file << edge.row << "," << edge.col << "," << edge.weight << endl;
+        file << weight << endl;
     }
 
     file.close();
+
+    cout << edge_count << endl;
+
+    double density = ((double)edge_count) / (movie_count * (movie_count - 1));
+    cout << density << endl;
 }
