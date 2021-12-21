@@ -35,7 +35,8 @@ def clean(base_dir='./', movie_view_threshold=15):
 
     with open(base_dir / 'genre.txt', 'w') as file:
         for genre in genre_set:
-            file.write(f'{genre}\n')
+            if genre not in ignored_genre_set:
+                file.write(f'{genre}\n')
 
     # Ratings cleaning
     rating_df = pd.read_csv(base_dir / 'ratings.csv')

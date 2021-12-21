@@ -64,6 +64,8 @@ def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, po
     result = nx.pagerank(G, weight='weight', alpha=alpha)
     movie_df['pagerank'] = pd.Series(result)
 
+    print('Classic pagerank completed')
+
     # Creating personalization sets
     with open('genre.txt') as file:
         genre_set = set(line.strip() for line in file)
@@ -89,6 +91,8 @@ def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, po
         # Same alpha value
         prob_teleport_each_movie = {genre: teleport_prob / count for genre, count in genre2count.items()}
         genre2teleport_prob = {genre: teleport_prob for genre, count in genre2count.items()}
+
+    print('Teleport sets are created')
 
     # Topic-specific Pagerank
     for genre in tqdm(genre2movies, disable=disable_progress_bar):
