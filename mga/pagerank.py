@@ -8,8 +8,22 @@ DIFFERENT_ALPHA_POLICY = 0
 SAME_ALPHA_POLICY = 1
 
 
-def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, policy=DIFFERENT_ALPHA_POLICY):
+def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, policy=DIFFERENT_ALPHA_POLICY,
+             unlabeled_movie_set=None):
+    """
+
+    :param base_dir:
+    :param teleport_prob:
+    :param disable_progress_bar:
+    :param policy:
+    :param unlabeled_movie_set: Movies in this set are removed from teleport sets in topic-specific pagerank.
+    I use it for genre classification
+    :return:
+    """
     base_dir = Path(base_dir)
+
+    if unlabeled_movie_set is None:
+        unlabeled_movie_set = set()
 
     movie_df = pd.read_csv(base_dir / 'movies.csv')
     movie_count = movie_df.shape[0]
@@ -72,6 +86,10 @@ def pagerank(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True, po
 
     genre2movies = {genre: [] for genre in genre_set}
     for movie_id, genre_str in zip(movie_df['id'], movie_df['genres']):
+
+        if movie_id in unlabeled_movie_set:
+            continue
+
         genre_lst = genre_str.split('|')
         for genre in genre_lst:
             if genre in genre2movies:
