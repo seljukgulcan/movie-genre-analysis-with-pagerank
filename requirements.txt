@@ -6,3 +6,4 @@ networkx
 matplotlib
 seaborn
 tqdm
+scikit-network
