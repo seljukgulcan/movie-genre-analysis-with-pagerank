@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
+from scipy.sparse import coo_matrix
 
 DIFFERENT_ALPHA_POLICY = 0
 SAME_ALPHA_POLICY = 1
@@ -145,22 +146,22 @@ def pagerank_skn(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True
     movie_count = movie_df.shape[0]
 
     # Read edges
-    edge_df = pd.read_csv(base_dir / 'edges.csv')
-    df_append = pd.DataFrame({'source': edge_df['destination'],
-                              'destination': edge_df['source'],
-                              'weight': edge_df['weight']})
-    edge_df = edge_df.append(df_append)
 
+    G = coo_matrix((movie_count, movie_count), dtype='f')
+    for chunk in pd.read_csv(base_dir / 'edges.csv', chunksize=100_000):
+        temp = coo_matrix((chunk['weight'], (chunk['source'], chunk['destination'])),
+                          shape=(movie_count, movie_count),
+                          dtype='f')
+        G += temp
     print('Edges read')
 
     # Create the influence graph
-    G = skn.data.convert_edge_list(edge_df.values, directed=True)
-    M_adj = G.adjacency
-    edge_df = None
+    G = G + G.T
+    G = G.tocsr()
     print('Graph generated')
 
     # Print some statistics for sanity check
-    edge_count = M_adj.nnz
+    edge_count = G.nnz
     print(f'Edge count: {edge_count}')
     print(f'Vertex count: {movie_count}')
 
@@ -168,23 +169,21 @@ def pagerank_skn(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True
 
     print(f'Density: {density:.4f}')
 
-    zero_in_edge_node_count = (M_adj.sum(axis=0) == 0).sum()
+    zero_in_edge_node_count = (G.sum(axis=0) == 0).sum()
     print(f'Nodes with 0 incoming edges : {zero_in_edge_node_count}')
-    zero_out_edge_node_count = (M_adj.sum(axis=1) == 0).sum()
+    zero_out_edge_node_count = (G.sum(axis=1) == 0).sum()
     print(f'Nodes with 0 outgoing edges : {zero_out_edge_node_count}')
 
     # Normalize weights
-    row_sum = np.asarray(M_adj.sum(axis=1)).squeeze()
+    row_sum = np.asarray(G.sum(axis=1)).squeeze()
     row_sum[row_sum == 0] = 1
-    M_adj.data /= row_sum[M_adj.nonzero()[0]]
-
-    G.adjacency = M_adj
+    G.data /= row_sum[G.nonzero()[0]]
 
     # Normal Pagerank
     damping_factor = 1 - teleport_prob
 
-    pagerank = skn.ranking.pagerank.PageRank(damping_factor=damping_factor, n_iter=50)
-    result = pagerank.fit_transform(G.adjacency)
+    pagerank = skn.ranking.pagerank.PageRank(damping_factor=damping_factor, n_iter=100)
+    result = pagerank.fit_transform(G)
     movie_df['pagerank'] = pd.Series(result)
 
     print('Classic pagerank completed')
@@ -226,8 +225,8 @@ def pagerank_skn(base_dir='./', teleport_prob=0.15, *, disable_progress_bar=True
         personalization_dict = {movie_id: 1 for movie_id in genre2movies[genre]}
         damping_factor = 1 - genre2teleport_prob[genre]
 
-        pagerank = skn.ranking.PageRank(damping_factor=damping_factor, n_iter=50)
-        result = pagerank.fit_transform(G.adjacency, seeds=personalization_dict)
+        pagerank = skn.ranking.PageRank(damping_factor=damping_factor, n_iter=100)
+        result = pagerank.fit_transform(G, seeds=personalization_dict)
         movie_df[genre] = pd.Series(result)
 
     return movie_df
