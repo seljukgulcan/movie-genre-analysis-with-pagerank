@@ -28,5 +28,5 @@ if __name__ == '__main__':
     print(f'Teleport probability: {teleport_prob}')
     print(f'Verbose: {verbose}')
 
-    df = mga.pagerank(base_dir='./', teleport_prob=teleport_prob, disable_progress_bar=not verbose)
+    df = mga.pagerank(base_dir='./', teleport_prob=teleport_prob, disable_progress_bar=not verbose, symmetric=True)
     df.to_csv('movies_pr.csv')

@@ -1,10 +1,21 @@
-# from mga.pagerank import pagerank
+from mga.pagerank import pagerank
+from mga.score import get_genre_scores
 
 from pathlib import Path
 import pandas as pd
 
 
 def clean(base_dir='./', movie_view_threshold=15):
+    """
+    Preprocesses downloaded movielens dataset by using movies.csv, links.csv, genre.txt files. After the preprocessing,
+    the method produces movies.csv and ratings.mtx files. The ratings.mtx file should be fed into
+    generate_influence_graph script to produce movie influence graph (edges.csv).
+    :param base_dir: Directory where dataset files are extracted. This path should contain movies.csv and
+    links.csv files
+    :param movie_view_threshold: Movies with less view count than this number are removed. Removing movies with
+    low view count helps the performance of pagerank by producing more sparse movie influence graph
+    :return: None
+    """
 
     base_dir = Path(base_dir)
 
