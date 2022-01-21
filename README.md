@@ -15,12 +15,11 @@ For each genre, the film either contains that genre or not.
 Can we convert this categorical representation into a continuous vector?
 Instead of saying exist or not exist for a genre, can we assign a real number that shows the effect of that genre for a particular movie?
 
-
-![Discrete vs Continous Genre Values](figures/discrete_vs_continous.png)
+<img src="figures/discrete_vs_continous.png" width="500">
 
 The figure below shows one benefit of computing continuous score vectors for each genre. Each row in the figure shows genre scores of a movie, and each column shows scores of the movies for a genre. It allows us to compare different genre scores of a movie (What is the dominant genre of this movie?) and compare different films for a particular genre (Is movie A or movie B more sci-fi movie?).
 
-![Continuous Vector Representation of Genres](figures/continous_genre_values.png)
+<img src="figures/continous_genre_values.png" width="500">
 
 ## Setup & Run
 
