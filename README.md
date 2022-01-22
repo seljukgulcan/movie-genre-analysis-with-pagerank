@@ -37,7 +37,7 @@ I used Python 3.9 but any Python distribution 3.6+ should be fine.
 
  `pip install -r requirements.txt`
 
-4. Build C++ codes in `cpp` directory with `make`. After building the codes, you should an executable file named `generate`.
+4. Build C++ codes in `cpp` directory with `make`. After building the codes, you should an see executable file named `generate`.
 
  ```
  cd cpp
